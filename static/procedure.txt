@@ -1,3 +1,7 @@
+//MYSQL Sored Procedurea
+*******************************************
+// sp_createUser: to check if a user with the same username already exists.
+
 DELIMITER $$
 CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_createUser`(
     IN p_name VARCHAR(40),
@@ -25,5 +29,17 @@ BEGIN
         );
      
     END IF;
+END$$
+DELIMITER ;
+********************************************
+//sp_validateLogin: to validate a user
+
+
+DELIMITER $$
+CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_validateLogin`(
+IN p_username VARCHAR(40)
+)
+BEGIN
+    select * from tbl_user where user_username = p_username;
 END$$
 DELIMITER ;
