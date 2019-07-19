@@ -42,6 +42,10 @@ def logout():
 def showSignUp():
     return render_template('signup.html')
 
+@app.route('/showAddWish')
+def showAddWish():
+    return render_template('addWish.html')
+
 @app.route('/signUp',methods=['POST'])
 def signUp():
     try:
@@ -106,6 +110,63 @@ def validateLogin():
     finally:
         cursor.close()
         conn.close()
+
+@app.route('/addWish',methods=['POST'])
+def addWish():
+    try:
+        if session.get('user'):
+            _title = request.form['inputTitle']
+            _description = request.form['inputDescription']
+            _user = session.get('user')
+ 
+            conn = mysql.connect()
+            cursor = conn.cursor()
+            cursor.callproc('sp_addWish',(_title,_description,_user))
+            data = cursor.fetchall()
+ 
+            if len(data) is 0:
+                conn.commit()
+                return redirect('/userHome')
+            else:
+                return render_template('error.html',error = 'An error occurred!')
+ 
+        else:
+            return render_template('error.html',error = 'Unauthorized Access')
+    except Exception as e:
+        return render_template('error.html',error = str(e))
+    finally:
+        cursor.close()
+        conn.close()
+
+@app.route('/getWish')
+def getWish():
+    try:
+        if session.get('user'):
+            _user = session.get('user')
+ 
+            conn = mysql.connect()
+            cursor = conn.cursor()
+            cursor.callproc('sp_GetWishByUser',(_user,))
+            wishes = cursor.fetchall()
+ 
+            wishes_dict = []
+            for wish in wishes:
+                wish_dict = {
+                        'Id': wish[0],
+                        'Title': wish[1],
+                        'Description': wish[2],
+                        'Date': wish[4]}
+                wishes_dict.append(wish_dict)
+ 
+            return json.dumps(wishes_dict)
+        else:
+            return render_template('error.html', error = 'Unauthorized Access')
+    except Exception as e:
+        return render_template('error.html', error = str(e))
+    finally:
+        cursor.close()
+        conn.close()
+
 
 if __name__ == "__main__":
     app.run(host='0.0.0.0')

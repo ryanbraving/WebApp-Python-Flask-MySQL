@@ -15,9 +15,68 @@
       href="http://getbootstrap.com/docs/3.4/examples/jumbotron-narrow/jumbotron-narrow.css"
       rel="stylesheet"
     />
-    <!-- <script src="../static/js/jquery-3.4.1.min.js"></script> -->
-
     <link href="../static/css/signup.css" rel="stylesheet" />
+
+    <script src="../static/js/jquery-3.4.1.min.js"></script>
+
+    <script>
+      $(function() {
+        $.ajax({
+          url: "/getWish",
+          type: "GET",
+          success: function(res) {
+            console.log(res);
+
+            var div1 = $("<div>")
+              .attr("class", "d-flex w-100 justify-content-between mb-3 ")
+              .append(
+                $("<h4>").attr("class", "mb-1"),
+                $("<small>").attr("class", "time")
+              );
+
+            var div = $("<div>")
+              .attr("class", "list-group mt-4 text-white")
+              .append(
+                $("<a>")
+                  .attr(
+                    "class",
+                    "list-group-item list-group-item-action active"
+                  )
+                  .append(
+                    $(div1),
+                    $("<p>").attr("class", "mb-1 text-left"),
+                    $("<small>").attr("class", "description")
+                  )
+              );
+
+            // Parse the JSON response
+            var wishObj = JSON.parse(res);
+            console.log(wishObj);
+
+            var wish = "";
+            $.each(wishObj, function(index, value) {
+              wish = $(div).clone();
+              $(wish)
+                .find("h4")
+                .text(value.Title);
+              $(wish)
+                .find("p")
+                .text(value.Description);
+              $(wish)
+                .find(".time")
+                .text(value.Date);
+              $(wish)
+                .find(".description")
+                .text(value.Description);
+              $(".jumbotron").append(wish);
+            });
+          },
+          error: function(error) {
+            console.log(error);
+          }
+        });
+      });
+    </script>
   </head>
 
   <body>
@@ -25,6 +84,9 @@
       <div class="header">
         <nav>
           <ul class="nav nav-pills justify-content-end">
+            <li class="nav-item">
+              <a class="nav-link" href="/showAddWish">Add Wish</a>
+            </li>
             <li class="nav-item">
               <a class="nav-link active" href="/logout">Logout</a>
             </li>
@@ -35,6 +97,18 @@
 
       <div class="jumbotron">
         <h1>Welcome Home !!</h1>
+        <!-- <div class="list-group mt-5">
+          <a href="#" class="list-group-item list-group-item-action active">
+            <div class="d-flex w-100 justify-content-between mb-3">
+              <h4 class="mb-1">Wish Title</h4>
+              <small class="time">3 days ago</small>
+            </div>
+            <p class="mb-1 text-left">
+              Wish Description
+            </p>
+            <small class="dummy">Donec id elit non mi porta.</small>
+          </a>
+        </div> -->
       </div>
 
       <footer class="footer">
