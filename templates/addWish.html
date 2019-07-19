@@ -18,7 +18,7 @@
     <!-- jQuery File -->
     <script src="../static/js/jquery-3.4.1.min.js"></script>
 
-    <!-- <link href="../static/signup.css" rel="stylesheet" /> -->
+    <link href="../static/signup.css" rel="stylesheet" />
   </head>
 
   <body>
@@ -52,6 +52,7 @@
                   type="text"
                   placeholder="placeholder"
                   class="form-control input-md"
+                  required
                 />
               </div>
             </div>
@@ -60,11 +61,13 @@
             <div class="form-group">
               <label class="col-md-4 control-label" for="txtPost">Post</label>
               <div class="col-md-4">
-                <textarea
-                  class="form-control"
+                <input
+                type="text"
+                  class="form-control input-lg"
                   id="txtPost"
                   name="inputDescription"
-                ></textarea>
+                  required
+                ></input>
               </div>
             </div>
 

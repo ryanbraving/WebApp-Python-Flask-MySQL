@@ -15,10 +15,13 @@
       href="http://getbootstrap.com/docs/3.4/examples/jumbotron-narrow/jumbotron-narrow.css"
       rel="stylesheet"
     />
-    <link href="../static/css/signup.css" rel="stylesheet" />
-
+    <link href="../static/signup.css" rel="stylesheet" />
+    
     <script src="../static/js/jquery-3.4.1.min.js"></script>
-
+    <script type="text/javascript" src="http://ajax.aspnetcdn.com/ajax/jquery.templates/beta1/jquery.tmpl.min.js"></script>
+    <script src="https://kit.fontawesome.com/e6b2299ff2.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
+   
     <script>
       $(function() {
         $.ajax({
@@ -27,49 +30,15 @@
           success: function(res) {
             console.log(res);
 
-            var div1 = $("<div>")
-              .attr("class", "d-flex w-100 justify-content-between mb-3 ")
-              .append(
-                $("<h4>").attr("class", "mb-1"),
-                $("<small>").attr("class", "time")
-              );
+           
+              
+              // Parse the JSON response
+              var wishObj = JSON.parse(res);
+              console.log(wishObj)
+              // Append to the template
+                $('#listTemplate').tmpl(wishObj).appendTo('#ulist');
 
-            var div = $("<div>")
-              .attr("class", "list-group mt-4 text-white")
-              .append(
-                $("<a>")
-                  .attr(
-                    "class",
-                    "list-group-item list-group-item-action active"
-                  )
-                  .append(
-                    $(div1),
-                    $("<p>").attr("class", "mb-1 text-left"),
-                    $("<small>").attr("class", "description")
-                  )
-              );
 
-            // Parse the JSON response
-            var wishObj = JSON.parse(res);
-            console.log(wishObj);
-
-            var wish = "";
-            $.each(wishObj, function(index, value) {
-              wish = $(div).clone();
-              $(wish)
-                .find("h4")
-                .text(value.Title);
-              $(wish)
-                .find("p")
-                .text(value.Description);
-              $(wish)
-                .find(".time")
-                .text(value.Date);
-              $(wish)
-                .find(".description")
-                .text(value.Description);
-              $(".jumbotron").append(wish);
-            });
           },
           error: function(error) {
             console.log(error);
@@ -77,9 +46,134 @@
         });
       });
     </script>
+    
+    <style>
+        .trash {
+            color: rgb(209, 91, 71);
+        }
+        .card .checkbox {
+            display: inline-block;
+            margin: 0px;
+        }
+        .list-group {
+            margin-bottom: 0px;
+        }
+    </style>
   </head>
 
   <body>
+    <!-- Edit Modal -->
+    <div class="modal fade" id="editModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="exampleModalLabel">Update Wish</h5>
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </div>
+          <div class="modal-body">
+            <form method="post" action="/updateWish">
+              <div class="form-group">
+                <label for="title-name" class="col-form-label">Title:</label>
+                <input type="text" class="form-control" id="title-name" name="inputTitle">
+              </div>
+              <div class="form-group">
+                <label for="description-text" class="col-form-label">Description:</label>
+                <textarea class="form-control" id="description-text" name="inputDescription"></textarea>
+              </div>
+              <div class="form-group">
+                <input type="hidden" class="form-control" id="wishId" name="inputWishId">
+              </div>
+              <div class="form-group">
+                <input type="hidden" class="form-control" id="wishUserId" name="inputUserId">
+              </div>
+            
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+            <button type="submit" class="btn btn-primary" >Update</button>
+          </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Delete Modal -->
+    <div class="modal fade" id="deleteModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="exampleModalLabel">Delete Wish</h5>
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </div>
+          <div class="modal-body">
+            You are about to delete your wish permanently!!
+            <form method="post" action="/deleteWish">
+              <div class="form-group">
+                <input type="hidden" class="form-control" id="wishId" name="inputWishId">
+              </div>
+              <div class="form-group">
+                <input type="hidden" class="form-control" id="wishUserId" name="inputUserId">
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                <button type="submit" class="btn btn-danger">Delete</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // Edit Modal Popin Up
+      $('#editModal').on('show.bs.modal', function (event) {
+          var button = $(event.relatedTarget) // Button that triggered the modal
+          var param = button.data('whatever') // Extract info from data-* attributes
+          // If necessary, you could initiate an AJAX request here (and then do the updating in a callback).
+          // Update the modal's content. We'll use jQuery here, but you could use a data binding library or other methods instead.
+          console.log(param)
+          var modal = $(this)
+          modal.find('.modal-body #title-name').val(param.title)
+          modal.find('.modal-body #description-text').val(param.description)
+          modal.find('.modal-body #wishId').val(param.id)
+          modal.find('.modal-body #wishUserId').val(param.user)
+      })
+
+      // Delete Modal Popin Up
+      $('#deleteModal').on('show.bs.modal', function (event) {
+          var button = $(event.relatedTarget) // Button that triggered the modal
+          var param = button.data('whatever') // Extract info from data-* attributes
+          console.log(param)
+          var modal = $(this)
+          modal.find('.modal-body #wishId').val(param.id)
+          modal.find('.modal-body #wishUserId').val(param.user)
+      })
+    </script>
+
+    <script id="listTemplate" type="text/x-jQuery-tmpl">
+      <li class="list-group-item d-flex justify-content-between">
+        <div class="checkbox" >
+          <h4>
+            ${Title}
+          </h4>
+          <p>${Description}</p>
+        </div>
+        <div class="action-buttons">
+          <a data-toggle="modal" data-target="#editModal" data-whatever='{"title":"${Title}", "description":"${Description}",
+            "id":"${Id}", "user":"${User}"}'>
+            <i class="far fa-edit ml-2"></i>
+          </a>
+          <a data-toggle="modal" data-target="#deleteModal" data-whatever='{"id":"${Id}", "user":"${User}"}'>
+            <i class="far fa-trash-alt ml-2"></i>
+          </a>
+        </div>
+      </li>
+    </script>
+
     <div class="container">
       <div class="header">
         <nav>
@@ -94,21 +188,14 @@
         </nav>
         <h3 class="text-muted">Python Flask App</h3>
       </div>
-
-      <div class="jumbotron">
-        <h1>Welcome Home !!</h1>
-        <!-- <div class="list-group mt-5">
-          <a href="#" class="list-group-item list-group-item-action active">
-            <div class="d-flex w-100 justify-content-between mb-3">
-              <h4 class="mb-1">Wish Title</h4>
-              <small class="time">3 days ago</small>
-            </div>
-            <p class="mb-1 text-left">
-              Wish Description
-            </p>
-            <small class="dummy">Donec id elit non mi porta.</small>
-          </a>
-        </div> -->
+      
+      <div class="row">
+        <div class="col-md-12">
+          <div class="card mb-3">
+            <ul id="ulist" class="list-group list-group-flush"> 
+            </ul>
+          </div>
+        </div>
       </div>
 
       <footer class="footer">
