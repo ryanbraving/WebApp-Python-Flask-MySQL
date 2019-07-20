@@ -23,20 +23,95 @@
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
    
     <script>
-      $(function() {
+      $(function(){
+		
+		    GetWishes(1);
+      })
+    function GetWishes(_page) {
+      var _offset = (_page - 1) * 2;
         $.ajax({
           url: "/getWish",
-          type: "GET",
+          type: "POST",
+          data: {
+            offset: _offset
+          },
           success: function(res) {
-            console.log(res);
+            var itemsPerPage = 2
+            // Parse the JSON response
+            var wishObj = JSON.parse(res)
+            // Append to the template
+            $('#ulist').empty();
+            $('#listTemplate').tmpl(wishObj[0]).appendTo('#ulist');
+            var total = wishObj[1].total
+            var pageCount = Math.floor(total/itemsPerPage)
+            if (total%itemsPerPage != 0){
+              pageCount ++
+            }
 
-           
-              
-              // Parse the JSON response
-              var wishObj = JSON.parse(res);
-              console.log(wishObj)
-              // Append to the template
-                $('#listTemplate').tmpl(wishObj).appendTo('#ulist');
+            $('.pagination').empty();
+ 
+            var pageStart = $('#hdnStart').val();
+            var pageEnd = $('#hdnEnd').val();
+
+            // var prevLink = $('<li>').attr('class', 'page-item')
+            //   .append($('<a>').attr({'class':'page-link'}, {'href': '#'}, {'aria-label': 'Previous'})
+            //   .append($('<span>').attr('aria-hidden', 'true').html('&laquo;')));
+            if (pageStart > 5) {
+              var aPrev = $('<a>').attr({'class':'page-link'}, {'href': '#'}, {'aria-label': 'Previous'})
+                .append($('<span>').attr('aria-hidden', 'true').html('&laquo;'));
+              $(aPrev).click(function() {
+                  $('#hdnStart').val(Number(pageStart) - 5);
+                  $('#hdnEnd').val(Number(pageStart) - 5 + 4);
+                  GetWishes(Number(pageStart) - 5);
+              });
+              var prevLink = $('<li>').attr('class', 'page-item').append(aPrev)
+              $('.pagination').append(prevLink);
+            }
+
+            for (var i = Number(pageStart); i <= Number(pageEnd); i++) {
+                if (i > pageCount) {
+                  break;
+                }
+                var aPage = $('<a>').attr({'class': 'page-link'}, {'href': '#'}).text(i);
+                // Attach the page click event
+                $(aPage).click(function(i) {
+                  return function() {
+                    GetWishes(i);
+                  }
+                }(i));
+                // Attach the active page class
+                if ((_page) == i) {
+                  $(page).attr('class', 'active');
+                }
+                var page = $('<li>').attr('class', 'page-item').append(aPage)
+
+                $('.pagination').append(page);
+                // offset = offset + itemsPerPage;
+
+            }  
+
+            // var nextLink = $('<li>').attr('class', 'page-item')
+            //   .append($('<a>').attr({'class':'page-link'}, {'href': '#'}, {'aria-label': 'Next'})
+            //   .append($('<span>').attr('aria-hidden', 'true').html('&raquo;')));
+            
+            if ((Number(pageStart) + 5) <= pageCount) {
+                var aNext = $('<a>').attr({'class':'page-link'}, {'href': '#'}, {'aria-label': 'Next'})
+                  .append($('<span>').attr('aria-hidden', 'true').html('&raquo;'));
+
+                $(aNext).click(function() {
+                    $('#hdnStart').val(Number(pageStart) + 5);
+                    $('#hdnEnd').val(Number(pageStart) + 5 + 4);
+                    GetWishes(Number(pageStart) + 5);
+                })
+                var nextLink = $('<li>').attr('class', 'page-item').append(aNext)
+                $('.pagination').append(nextLink);
+            }
+            // var pageObj = []
+            // for (var i = 1; i <= pageCount; i++) { 
+            //   pageObj.push({"Page":i})
+            // }  
+            // console.log(pageObj)
+            // $('#paginationTemplate').tmpl(pageObj).appendTo('#pagination');
 
 
           },
@@ -44,20 +119,15 @@
             console.log(error);
           }
         });
-      });
+    }
     </script>
-    
     <style>
-        .trash {
-            color: rgb(209, 91, 71);
-        }
-        .card .checkbox {
-            display: inline-block;
-            margin: 0px;
-        }
-        .list-group {
-            margin-bottom: 0px;
-        }
+      .fa-edit{
+        color: blue;
+      }
+      .fa-trash-alt{
+        color: red;
+      }
     </style>
   </head>
 
@@ -135,7 +205,6 @@
           var param = button.data('whatever') // Extract info from data-* attributes
           // If necessary, you could initiate an AJAX request here (and then do the updating in a callback).
           // Update the modal's content. We'll use jQuery here, but you could use a data binding library or other methods instead.
-          console.log(param)
           var modal = $(this)
           modal.find('.modal-body #title-name').val(param.title)
           modal.find('.modal-body #description-text').val(param.description)
@@ -147,11 +216,22 @@
       $('#deleteModal').on('show.bs.modal', function (event) {
           var button = $(event.relatedTarget) // Button that triggered the modal
           var param = button.data('whatever') // Extract info from data-* attributes
-          console.log(param)
           var modal = $(this)
           modal.find('.modal-body #wishId').val(param.id)
           modal.find('.modal-body #wishUserId').val(param.user)
       })
+
+
+      // $(document).on('click', 'ul.pagination li a', function(event) { 
+      //   console.log(event.target.text)
+      //   console.log(event.target)
+      //  });
+
+      //  $(document).on('click', 'ul.pagination li a span', function(event) { 
+        // console.log(event.target.text)
+        // console.log(event.target.id)
+      //  });
+
     </script>
 
     <script id="listTemplate" type="text/x-jQuery-tmpl">
@@ -174,6 +254,11 @@
       </li>
     </script>
 
+    <!-- <script id="paginationTemplate" type="text/x-jQuery-tmpl">
+      <li class="page-item">
+        <a class="page-link" href="#">${Page}</a>
+      </li>
+    </script> -->
     <div class="container">
       <div class="header">
         <nav>
@@ -189,14 +274,37 @@
         <h3 class="text-muted">Python Flask App</h3>
       </div>
       
-      <div class="row">
-        <div class="col-md-12">
-          <div class="card mb-3">
-            <ul id="ulist" class="list-group list-group-flush"> 
-            </ul>
+      <div class="jumbotron">
+        <div class="row">
+          <div class="col-md-12">
+            <div class="card mb-3">
+              <ul id="ulist" class="list-group list-group-flush"> 
+              </ul>
+            </div>
           </div>
         </div>
+        <nav aria-label="Page navigation example">
+          <ul class="pagination text-primary">
+            <!-- <li class="page-item">
+              <a class="page-link" href="#" aria-label="Previous">
+                <span id="previous" aria-hidden="true">&laquo;</span>
+              </a>
+            </li>
+            <li class="page-item"><a class="page-link" href="#">1</a></li>
+            <li class="page-item"><a class="page-link" href="#">2</a></li>
+            <li class="page-item"><a class="page-link" href="#">3</a></li>
+            <li class="page-item">
+              <a class="page-link" href="#" aria-label="Next">
+                <span id="next" aria-hidden="true">&raquo;</span>
+              </a>
+            </li> -->
+          </ul>
+        </nav>
       </div>
+
+      <input type="hidden" id="hdnStart" value="1" />
+      <input type="hidden" id="hdnEnd" value="5"/>
+      
 
       <footer class="footer">
         <p>&copy; Company 2015</p>

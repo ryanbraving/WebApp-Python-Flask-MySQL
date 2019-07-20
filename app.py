@@ -15,6 +15,9 @@ app.config['MYSQL_DATABASE_DB'] = 'BucketList'
 app.config['MYSQL_DATABASE_HOST'] = 'localhost'
 mysql.init_app(app)
 
+# Default setting
+pageLimit = 2
+
 @app.route("/")
 def main():
     return render_template('index.html')
@@ -138,17 +141,25 @@ def addWish():
         cursor.close()
         conn.close()
 
-@app.route('/getWish')
+@app.route('/getWish',methods=['POST'])
 def getWish():
     try:
         if session.get('user'):
             _user = session.get('user')
+            _limit = pageLimit
+            _offset = request.form['offset']
+            _total_records = 0
  
             conn = mysql.connect()
             cursor = conn.cursor()
-            cursor.callproc('sp_GetWishByUser',(_user,))
+            cursor.callproc('sp_GetWishByUser',(_user,_limit,_offset, _total_records))
             wishes = cursor.fetchall()
- 
+
+            cursor.close()
+            cursor = conn.cursor()
+            cursor.execute('SELECT @_sp_GetWishByUser_3')
+            outParam = cursor.fetchall()
+            response = []
             wishes_dict = []
             for wish in wishes:
                 wish_dict = {
@@ -158,8 +169,11 @@ def getWish():
                         'User': wish[3],
                         'Date': wish[4]}
                 wishes_dict.append(wish_dict)
+            
+            response.append(wishes_dict)
+            response.append({'total': outParam[0][0]})
  
-            return json.dumps(wishes_dict)
+            return json.dumps(response)
         else:
             return render_template('error.html', error = 'Unauthorized Access')
     except Exception as e:
@@ -176,19 +190,22 @@ def updateWish():
             _title = request.form['inputTitle']
             _description = request.form['inputDescription']
             _user = session.get('user')
-            # _userWish = request.form['inputUserId']
+            _userWish = request.form['inputUserId']
+
+            if (str(_user) == _userWish):
            
-            conn = mysql.connect()
-            cursor = conn.cursor()
-            cursor.callproc('sp_updateWish',(_title,_description,_id,_user))
-            data = cursor.fetchall()
- 
-            if len(data) is 0:
-                conn.commit()
-                return redirect('/userHome')
+                conn = mysql.connect()
+                cursor = conn.cursor()
+                cursor.callproc('sp_updateWish',(_title,_description,_id,_user))
+                data = cursor.fetchall()
+    
+                if len(data) is 0:
+                    conn.commit()
+                    return redirect('/userHome')
+                else:
+                    return render_template('error.html',error = 'An error occurred!')
             else:
-                return render_template('error.html',error = 'An error occurred!')
- 
+                return render_template('error.html',error = 'User is not the doc owner!')
         else:
             return render_template('error.html',error = 'Unauthorized Access')
     except Exception as e:
@@ -207,7 +224,6 @@ def deleteWish():
             _userWish = request.form['inputUserId']
             
             if (str(_user) == _userWish):
-                print("ryan here")
                 conn = mysql.connect()
                 cursor = conn.cursor()
                 cursor.callproc('sp_deleteWish',(_id,_user))
@@ -218,10 +234,8 @@ def deleteWish():
                     return redirect('/userHome')
                 else:
                     return render_template('error.html',error = 'An error occurred!')
-
             else:
                 return render_template('error.html',error = 'User is not the doc owner!')
- 
         else:
             return render_template('error.html',error = 'Unauthorized Access')
     except Exception as e:
