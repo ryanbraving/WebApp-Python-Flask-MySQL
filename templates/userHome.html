@@ -39,6 +39,7 @@
             var itemsPerPage = 2
             // Parse the JSON response
             var wishObj = JSON.parse(res)
+            console.log(wishObj)
             // Append to the template
             $('#ulist').empty();
             $('#listTemplate').tmpl(wishObj[0]).appendTo('#ulist');
@@ -158,7 +159,37 @@
               <div class="form-group">
                 <input type="hidden" class="form-control" id="wishUserId" name="inputUserId">
               </div>
-            
+
+              <div class="form-group">
+                  <label for="txtPost">Photos</label>
+               
+                  <div class="input-group">
+                      <div class="d-flex justify-content-between">
+                          <input
+                            type="file"
+                            class="form-control-file"
+                            id="fileupload"
+                            name="file"
+                          />
+                      <div class="pull-right">
+                          <img id="imgUpload" style="width: 140px; height: 140px;" class="img-thumbnail">
+                          <input type="hidden" name="filePath" id="filePath">
+                      </div>
+                      </div>
+                  </div>
+               
+              </div>
+
+              <div class="form-group form-check">
+                <input id="private" name="private" type="checkbox" class="form-check-input">
+                <label class="form-check-label">Mark as Private </label>
+              </div>
+               
+              <div class="form-group form-check">
+                <input id="done" name="done" type="checkbox" class="form-check-input">
+                <label class="form-check-label">Mark as Done </label>
+              </div>
+                        
           </div>
           <div class="modal-footer">
             <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
@@ -203,6 +234,7 @@
       $('#editModal').on('show.bs.modal', function (event) {
           var button = $(event.relatedTarget) // Button that triggered the modal
           var param = button.data('whatever') // Extract info from data-* attributes
+          console.log(param)
           // If necessary, you could initiate an AJAX request here (and then do the updating in a callback).
           // Update the modal's content. We'll use jQuery here, but you could use a data binding library or other methods instead.
           var modal = $(this)
@@ -210,6 +242,21 @@
           modal.find('.modal-body #description-text').val(param.description)
           modal.find('.modal-body #wishId').val(param.id)
           modal.find('.modal-body #wishUserId').val(param.user)
+          modal.find('.modal-body #imgUpload').attr('src',param.filePath);
+          modal.find('.modal-body #filePath').val(param.filePath)
+          
+          if (param.private == 1){
+            modal.find('.modal-body #private').attr('checked', true)
+          }
+          else{
+            modal.find('.modal-body #private').attr('checked', false)
+          }
+          if (param.done == 1){
+            modal.find('.modal-body #done').attr('checked', true)
+          }
+          else{
+            modal.find('.modal-body #done').attr('checked', false)
+          }
       })
 
       // Delete Modal Popin Up
@@ -244,7 +291,7 @@
         </div>
         <div class="action-buttons">
           <a data-toggle="modal" data-target="#editModal" data-whatever='{"title":"${Title}", "description":"${Description}",
-            "id":"${Id}", "user":"${User}"}'>
+            "id":"${Id}","user":"${User}","filePath":"${FilePath}","private":"${Private}","done":"${Done}"  }'>
             <i class="far fa-edit ml-2"></i>
           </a>
           <a data-toggle="modal" data-target="#deleteModal" data-whatever='{"id":"${Id}", "user":"${User}"}'>
