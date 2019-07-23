@@ -43,6 +43,9 @@ def upload():
         file.save(os.path.join(app.config['UPLOAD_FOLDER'], f_name))
         return json.dumps({'filename': f_name})
 
+@app.route('/showDashboard')
+def showDashboard():
+    return render_template('dashboard.html')
 
 @app.route('/showSignin')
 def showSignin():
@@ -126,7 +129,7 @@ def validateLogin():
         if len(data) > 0:
             if check_password_hash(str(data[0][3]), _password):
                 session['user'] = data[0][0]
-                return redirect('/userHome')
+                return redirect('/showDashboard')
             else:
                 return render_template('error.html', error='Wrong Email address or Password.')
         else:
@@ -297,6 +300,84 @@ def deleteWish():
                     return render_template('error.html', error='An error occurred!')
             else:
                 return render_template('error.html', error='User is not the doc owner!')
+        else:
+            return render_template('error.html', error='Unauthorized Access')
+    except Exception as e:
+        return render_template('error.html', error=str(e))
+    finally:
+        cursor.close()
+        conn.close()
+
+
+@app.route('/getAllWishes')
+def getAllWishes():
+    try:
+        if session.get('user'):
+
+            _user = session.get('user')
+            conn = mysql.connect()
+            cursor = conn.cursor()
+            
+            cursor.callproc('sp_GetAllWishes' ,(_user,))
+            
+
+            wishes = cursor.fetchall()
+            
+            wishes_dict = []
+            for wish in wishes:
+                wish_dict = {
+                    'id': wish[0],
+                    'title': wish[1],
+                    'description': wish[2],
+                    'user': wish[3],
+                    'date': wish[4],
+                    'filePath': wish[5],
+                    'likeCount': wish[6],
+                    'hasLiked':wish[7]
+                    }
+                wishes_dict.append(wish_dict)
+
+
+            return json.dumps(wishes_dict)
+        else:
+            return render_template('error.html', error='Unauthorized Access')
+    except Exception as e:
+        return render_template('error.html', error=str(e))
+    finally:
+        cursor.close()
+        conn.close()
+
+@app.route('/addUpdateLike', methods=['POST'])
+def addUpdateLike():
+    try:
+        if session.get('user'):
+
+            _wishId = request.form['wish']
+            _liked = request.form['like']
+            _user = session.get('user')
+
+            
+            conn = mysql.connect()
+            cursor = conn.cursor()
+            cursor.callproc('sp_AddUpdateLikes', (_wishId, _user, _liked))
+            
+            data = cursor.fetchall()
+            
+            if len(data) is 0:
+                conn.commit()
+                cursor.close()
+                conn.close()
+
+                conn = mysql.connect()
+                cursor = conn.cursor()
+                cursor.callproc('sp_getLikeStatus',(_wishId,_user))
+                result = cursor.fetchall()
+
+                return json.dumps({'status':'OK','totalLikes':result[0][0],'hasLiked':result[0][1]})
+                # return json.dumps({'status':'OK'})
+            else:
+                return render_template('error.html', error='An error occurred!')
+
         else:
             return render_template('error.html', error='Unauthorized Access')
     except Exception as e:

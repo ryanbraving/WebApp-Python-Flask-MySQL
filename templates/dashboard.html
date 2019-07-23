@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>Python Flask Bucket List App</title>
+
+    <!-- Bootstrap CDN -->
+    <link
+      rel="stylesheet"
+      href="https://stackpath.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css"
+      integrity="sha384-HSMxcRTRxnN+Bdg0JdbxYKrThecOKuH5zCYotlSAcp1+c8xmyTe9GYg1l9a69psu"
+      crossorigin="anonymous"
+    />
+    <!-- Jumbotron narrow example -->
+    <link
+      href="http://getbootstrap.com/docs/3.4/examples/jumbotron-narrow/jumbotron-narrow.css"
+      rel="stylesheet"
+    />
+    <script src="../static/js/jquery-3.4.1.min.js"></script>
+
+    <link href="../static/signup.css" rel="stylesheet" />
+
+    <script>
+      $(function() {
+        $.ajax({
+          url: "/getAllWishes",
+          type: "GET",
+          success: function(response) {
+            var data = JSON.parse(response);
+            console.log(data);
+
+            var itemsPerRow = 0;
+            var div = $("<div>").attr("class", "row");
+            for (var i = 0; i < data.length; i++) {
+              if (itemsPerRow < 3) {
+                if (i == data.length - 1) {
+                  div.append(
+                    CreateThumb(
+                      data[i].id,
+                      data[i].title,
+                      data[i].description,
+                      data[i].filePath,
+                      data[i].likeCount,
+                      data[i].hasLiked
+                    )
+                  );
+                  $(".well").append(div);
+                } else {
+                  div.append(
+                    CreateThumb(
+                      data[i].id,
+                      data[i].title,
+                      data[i].description,
+                      data[i].filePath,
+                      data[i].likeCount,
+                      data[i].hasLiked
+                    )
+                  );
+                  itemsPerRow++;
+                }
+              } else {
+                $(".well").append(div);
+                div = $("<div>").attr("class", "row");
+                div.append(
+                  CreateThumb(
+                    data[i].id,
+                    data[i].title,
+                    data[i].description,
+                    data[i].filePath,
+                    data[i].likeCount,
+                    data[i].hasLiked
+                  )
+                );
+                if (i == data.length - 1) {
+                  $(".well").append(div);
+                }
+                itemsPerRow = 1;
+              }
+            }
+            // $.each(dataObj, function(index, value) {
+            //   $(".row").append(
+            //     CreateThumb(value.filePath, value.title, value.description)
+            //   );
+            //   console.log(value);
+            // });
+            // $.each(dataObj, function(index, value) {
+            // console.log(dataObj.length);
+            // var iter = Math.floor(dataObj.length / 3);
+            // if (dataObj.length % 3 == 0) {
+            //   iter--;
+            // }
+
+            // var row = $("<div>").attr("class", "row");
+            // var i = 0;
+            // var n = 3;
+            // for (var j = 0; j <= iter; j++) {
+            //   for (i; i < n; i++) {
+            //     row.append(
+            //       CreateThumb(
+            //         dataObj[i].filePath,
+            //         dataObj[i].title,
+            //         dataObj[i].description
+            //       )
+            //     );
+            //   }
+            //   i = i + 3;
+            //   n = n + 3;
+            // }
+            // $(".well").append(row);
+          },
+          error: function(error) {
+            console.log(error);
+          }
+        });
+      });
+
+      function CreateThumb(
+        id,
+        title,
+        description,
+        filePath,
+        likeCount,
+        hasLiked
+      ) {
+        var mainDiv = $("<div>").attr("class", "col-sm-4 col-md-4");
+        var thumbnail = $("<div>").attr("class", "thumbnail");
+        var img = $("<img>").attr({
+          src: filePath,
+          alt: "100%x200",
+          "data-holder-rendered": "true",
+          style: "height: 150px; width: 150px; display: block"
+        });
+        var caption = $("<div>").attr("class", "caption");
+        var title = $("<h3>").text(title);
+        var desc = $("<p>").text(description);
+        var p = $("<p>");
+        var btn = $("<button>")
+          .attr({
+            id: "btn_" + id,
+            type: "button",
+            class: "btn btn-danger btn-sm"
+          })
+          .click(function() {
+            $.ajax({
+              url: "/addUpdateLike",
+              method: "POST",
+              data: { wish: id, like: 1 },
+              success: function(response) {
+                var obj = JSON.parse(response);
+                if (obj.hasLiked == "1") {
+                  $("#span_" + id).html(
+                    "&nbsp;You & " + (Number(obj.totalLikes) - 1) + " Others"
+                  );
+                } else {
+                  $("#span_" + id).html("&nbsp;" + obj.totalLikes + " like(s)");
+                }
+              },
+              error: function(error) {
+                console.log(error);
+              }
+            });
+          });
+        var span = $("<span>").attr({
+          class: "glyphicon glyphicon-thumbs-up",
+          "aria-hidden": "true"
+        });
+
+        var likeSpan = $("<span>")
+          .attr({ "aria-hidden": "true", id: "span_" + id })
+          .html("&nbsp;" + likeCount + " like(s)");
+
+        if (hasLiked == "1") {
+          likeSpan.html("&nbsp;You & " + (Number(likeCount) - 1) + " Others");
+        } else {
+          likeSpan.html("&nbsp;" + likeCount + " like(s)");
+        }
+
+        p.append(btn.append(span), likeSpan);
+        caption.append(title, desc, p);
+        mainDiv.append(thumbnail.append(img, caption));
+        // mainDiv.append(thumbnail.append(img,caption.append(title, desc, p.append(btn.append(span)))));
+        return mainDiv;
+      }
+    </script>
+  </head>
+
+  <body>
+    <div class="container">
+      <div class="header">
+        <nav>
+          <ul class="nav nav-pills pull-right">
+            <li role="presentation" class="active">
+              <a href="#">Dashboard</a>
+            </li>
+            <li role="presentation"><a href="/userHome">My List</a></li>
+            <li role="presentation"><a href="/showAddWish">Add Item</a></li>
+            <li role="presentation"><a href="/logout">Logout</a></li>
+          </ul>
+        </nav>
+        <h3 class="text-muted">Python Flask App</h3>
+      </div>
+
+      <div class="well">
+        <!--<div class="row"></div>-->
+      </div>
+
+      <footer class="footer">
+        <p>&copy; Company 2015</p>
+      </footer>
+    </div>
+  </body>
+</html>

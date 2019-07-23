@@ -241,3 +241,241 @@ update tbl_wish set
 END$$
  
 DELIMITER ;
+
+********************************************
+//sp_GetAllWishes to fetch all the wishes from tbl_wish 
+which are not marked as private.
+
+
+USE `BucketList`;
+DROP procedure IF EXISTS `sp_GetAllWishes`;
+ 
+DELIMITER $$
+USE `BucketList`$$
+CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_GetAllWishes`()
+BEGIN
+    select wish_id,wish_title,wish_description,wish_user_id, wish_date, wish_file_path from tbl_wish where wish_private = 0;
+END$$
+ 
+DELIMITER ;
+
+********************************************
+//sp_AddUpdateLikes to check if the person has already liked the wish or not. 
+If he or she has already liked, then we update that like entry otherwise we add a new one.
+
+USE `BucketList`;
+DROP procedure IF EXISTS `sp_AddUpdateLikes`;
+
+DELIMITER $$
+ 
+CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_AddUpdateLikes`(
+    p_wish_id int,
+    p_user_id int,
+    p_liked int
+)
+BEGIN
+    if (select exists (select 1 from tbl_likes where wish_id = p_wish_id and user_id = p_user_id)) then
+ 
+        update tbl_likes set wish_liked = p_liked where wish_id = p_wish_id and user_id = p_user_id;
+         
+    else
+         
+        insert into tbl_likes(
+            wish_id,
+            user_id,
+            wish_liked
+        )
+        values(
+            p_wish_id,
+            p_user_id,
+            p_liked
+        );
+ 
+    end if;
+END$$
+
+DELIMITER ;
+
+********************************************
+//sp_addWish to modify the sp_addWish to add an entry into the tbl_likes table.
+after inserting the wish into the tbl_wish table, 
+we fetched the last inserted ID and inserted the data into tbl_likes table.
+
+USE `BucketList`;
+DROP procedure IF EXISTS `sp_addWish`;
+
+DELIMITER $$
+CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_addWish`(
+    IN p_title varchar(45),
+    IN p_description varchar(1000),
+    IN p_user_id bigint,
+    IN p_file_path varchar(200),
+    IN p_is_private int,
+    IN p_is_done int
+)
+BEGIN
+    insert into tbl_wish(
+        wish_title,
+        wish_description,
+        wish_user_id,
+        wish_date,
+        wish_file_path,
+        wish_private,
+        wish_accomplished
+    )
+    values
+    (
+        p_title,
+        p_description,
+        p_user_id,
+        NOW(),
+        p_file_path,
+        p_is_private,
+        p_is_done
+    );
+ 
+    SET @last_id = LAST_INSERT_ID();
+    insert into tbl_likes(
+        wish_id,
+        user_id,
+        wish_liked
+    )
+    values(
+        @last_id,
+        p_user_id,
+        0
+    );
+     
+ 
+END$$
+DELIMITER ;
+
+--------------------------------------------
+//func_getSum a function to take the wish ID 
+and return the total number of likes.
+
+
+USE `BucketList`;
+DROP function IF EXISTS `func_getSum`;
+
+DELIMITER $$
+CREATE DEFINER=`root`@`localhost` FUNCTION `func_getSum`(
+    p_wish_id int
+) RETURNS int(11)
+BEGIN
+    select sum(wish_liked) into @sm from tbl_likes where wish_id = p_wish_id;
+RETURN @sm;
+END$$
+DELIMITER ;
+
+********************************************
+//sp_GetAllWishes to update the stored procedure to call function 
+func_getSum to get the total number of likes for each wish.
+
+USE `BucketList`;
+DROP procedure IF EXISTS `sp_GetAllWishes`;
+ 
+DELIMITER $$
+USE `BucketList`$$
+CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_GetAllWishes`()
+BEGIN
+    select wish_id,wish_title,wish_description,wish_user_id, wish_date, wish_file_path, func_getSum(wish_id) from tbl_wish where wish_private = 0;
+END$$
+ 
+DELIMITER ;
+
+--------------------------------------------
+//func_hasLiked a function to take the wish ID 
+and user Id as the parameters and returns whether the wish has been liked by the user or not.
+
+
+USE `BucketList`;
+DROP function IF EXISTS `func_hasLiked`;
+
+DELIMITER $$
+CREATE DEFINER=`root`@`localhost` FUNCTION `func_hasLiked`(
+    p_wish_id int,
+    p_user_id int
+) RETURNS int(11)
+BEGIN
+    select wish_liked into @myval from tbl_likes where wish_id =  p_wish_id and user_id = p_user_id;
+RETURN @myval;
+END$$
+DELIMITER ;
+
+********************************************
+//sp_GetAllWishes to update the stored procedure to call function 
+func_hasLiked to return an extra field in the returned data set indicating the user like status
+
+USE `BucketList`;
+DROP procedure IF EXISTS `sp_GetAllWishes`;
+ 
+DELIMITER $$
+USE `BucketList`$$
+CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_GetAllWishes`(
+    p_user_id int
+)
+BEGIN
+    select wish_id,wish_title,wish_description,wish_user_id, wish_date, wish_file_path, func_getSum(wish_id), func_hasLiked(wish_id,p_user_id) from tbl_wish where wish_private = 0;
+END$$
+ 
+DELIMITER ;
+
+
+********************************************
+//sp_AddUpdateLikes to update sp to set like/unlike
+
+USE `BucketList`;
+DROP procedure IF EXISTS `sp_AddUpdateLikes`;
+
+DELIMITER $$
+ 
+CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_AddUpdateLikes`(
+    p_wish_id int,
+    p_user_id int,
+    p_liked int
+)
+BEGIN
+    if (select exists (select 1 from tbl_likes where wish_id = p_wish_id and user_id = p_user_id)) then
+ 
+        select wish_liked into @currentVal from tbl_likes where wish_id = p_wish_id and user_id = p_user_id;
+         
+        if @currentVal = 0 then
+            update tbl_likes set wish_liked = 1 where wish_id = p_wish_id and user_id = p_user_id;
+        else
+            update tbl_likes set wish_liked = 0 where wish_id = p_wish_id and user_id = p_user_id;
+        end if;
+         
+    else
+         
+        insert into tbl_likes(
+            wish_id,
+            user_id,
+            wish_liked
+        )
+        values(
+            p_wish_id,
+            p_user_id,
+            p_liked
+        );
+ 
+    end if;
+END$$
+
+DELIMITER ;
+
+********************************************
+//sp_getLikeStatus to fetch the wish like count and status 
+
+USE `BucketList`;
+DROP procedure IF EXISTS `sp_getLikeStatus`;
+
+DELIMITER $$
+CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_getLikeStatus`(
+    IN p_wish_id int,
+    IN p_user_id int
+)
+BEGIN
+    select func_getSum(p_wish_id), func_hasLiked(p_wish_id,p_user_id);
+END$$
+DELIMITER ;
